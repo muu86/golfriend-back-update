@@ -1,0 +1,9 @@
+venv/
+.idea/
+static/
+
+*.mp4
+*.tar
+*.cfg
+*.weights
+*.png
