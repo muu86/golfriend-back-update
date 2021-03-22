@@ -236,5 +236,13 @@ def login():
         return 'bad'
 
 
+@app.route('/latest-swing')
+@jwt_required()
+def latest_swing():
+    current_user = get_jwt_identity()
+    print(current_user)
+    return jsonify(current_user), 200
+
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=80)
