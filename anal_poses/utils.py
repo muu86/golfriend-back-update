@@ -17,8 +17,8 @@ def p3_angle(a, b, c):
 
 
 def p2_diff(a, b):
-    a = np.array(a)
-    b = np.array(b)
+    a = np.array(a)[[0, 1]]
+    b = np.array(b)[[0, 1]]
     return a - b
 
 

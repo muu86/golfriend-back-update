@@ -1,88 +1,32 @@
-import os
-import sys
-import cv2
-import json
-# import pickle
-import numpy as np
-from datetime import datetime
-from flask import Flask, request, send_from_directory, abort, jsonify
-import torch
-from torch.utils.data import DataLoader
-from torchvision import transforms
-import torch.nn.functional as F
-
-from models.yolo.yolo import yolo
-from anal_poses import Anal
-from anal_poses.utils import MyEncoder
-
-from pymongo import MongoClient
-from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
-
-# openpose 패스 설정
-op_path = "C:/openpose/bin/python/openpose/Release"
-sys.path.append(op_path)
-os.environ['PATH'] = os.environ['PATH'] + ';' + 'C:/openpose/bin'
-
-# openpose import
-try:
-    import pyopenpose as op
-except ImportError as e:
-    raise e
-
-# golfdb import
-try:
-    from models.golfdb.test_video import SampleVideo, event_names
-    from models.golfdb.dataloader import ToTensor, Normalize
-    from models.golfdb.model import EventDetector
-except ImportError as e:
-    raise e
-
-# pymongo 연결
-conn = MongoClient('127.0.0.1')
-db = conn.golfriend
-col = db.data
-
-# 플라스크 시작
-app = Flask(__name__)
-
-app.config['SECRET_KEY'] = 'mjmj'
-
-jwt = JWTManager(app)
-
-# 비디오 파일, 이미지 파일 저장할 디렉토리
-VIDEO_SAVE_PATH = 'data/videos/'
-IMAGE_SAVE_PATH = 'data/images/output_images/'
-# 이미지를 저장할 이름을 현재 시간으로 설정 XXXX.XXXX
-IMAGE_SAVE_NAME = datetime.timestamp(datetime.now())
 
 
 @app.route('/uploads', methods=['POST'])
-def upload_file():
-
-    file = request.files['video']
-    video_path = os.path.join(VIDEO_SAVE_PATH, file.filename)
-    # print('현재경로는: ', os.getcwd())
-    # print('비디오 파일 저장 경로는: ', video_path)
-    file.save(video_path)
-    print('비디오 저장')
-
+# def upload_file():
+#
+#     file = request.files['video']
+#     video_path = os.path.join(VIDEO_SAVE_PATH, file.filename)
+#     print('현재경로는: ', os.getcwd())
+#     print('비디오 파일 저장 경로는: ', video_path)
+#     file.save(video_path)
+#     print('비디오 저장')
+#
     """
     -----------------------
     골프 db 에서 모델을 가져온다
     -----------------------
     """
-    print('golfdb 시작')
-    ds = SampleVideo(video_path, transform=transforms.Compose([ToTensor(),
-                                    Normalize([0.485, 0.456, 0.406],
-                                              [0.229, 0.224, 0.225])]))
-
-    dl = DataLoader(ds, batch_size=1, shuffle=False, drop_last=False)
-
-    model = EventDetector(pretrain=True,
-                              width_mult=1.,
-                              lstm_layers=1,
-                              lstm_hidden=256,
-                              bidirectional=True,
+#     print('golfdb 시작')
+#     ds = SampleVideo(video_path, transform=transforms.Compose([ToTensor(),
+#                                     Normalize([0.485, 0.456, 0.406],
+#                                               [0.229, 0.224, 0.225])]))
+#
+#     dl = DataLoader(ds, batch_size=1, shuffle=False, drop_last=False)
+#
+#     model = EventDetector(pretrain=True,
+#                               width_mult=1.,
+#                               lstm_layers=1,
+#                               lstm_hidden=256,
+#                               bidirectional=True,
                               dropout=False)
 
     save_dict = torch.load('models/golfdb/weight/swingnet_1800.pth.tar')
@@ -195,46 +139,8 @@ def get_images(image_name, i):
 
 @app.route('/signup', methods=['POST'])
 def sign_up():
-    print('회원 가입 라우트')
-    email = request.json.get('email')
-    last_name = request.json.get('lastname')
-    first_name = request.json.get('firstname')
-    password = request.json.get('password')
-
-    print(f'{email}, {last_name}, {first_name}, {password} 가입 신청')
-
-    user = {
-        'lastName': last_name,
-        'firstName': first_name,
-        'password': password,
-        'email': email
-    }
-
-    col.insert(user)
-
-    access_token = create_access_token(identity=email)
-
-    return jsonify(access_token)
-
-
-@app.route('/login', methods=['POST'])
-def login():
-    email = request.json.get('email')
-    password = request.json.get('password')
-
-    doc = col.find_one({
-        'email': email,
-        'password': password,
-    })
-    # for doc in docs:
-    #     print(doc)
-    if doc:
-        access_token = create_access_token(identity=email)
-        return jsonify(access_token)
-    else:
-        print('none')
-        return 'bad'
-
-
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=80)
+    print('hi')
+    last_name = request.form['lastName']
+    first_name = request.form['firstName']
+    print(last_name, first_name)
+    return 'success'
