@@ -16,6 +16,7 @@ from anal_poses import Anal
 from anal_poses.utils import MyEncoder
 
 from pymongo import MongoClient
+from bson.json_util import dumps
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
 
 # openpose 패스 설정
@@ -52,12 +53,20 @@ jwt = JWTManager(app)
 # 비디오 파일, 이미지 파일 저장할 디렉토리
 VIDEO_SAVE_PATH = 'data/videos/'
 IMAGE_SAVE_PATH = 'data/images/output_images/'
-# 이미지를 저장할 이름을 현재 시간으로 설정 XXXX.XXXX
-IMAGE_SAVE_NAME = datetime.timestamp(datetime.now())
 
 
 @app.route('/uploads', methods=['POST'])
+@jwt_required()
 def upload_file():
+    # result를 디비에 저장하기 위해 jwt 로 본인확인
+    current_user = get_jwt_identity()
+    print(current_user, '님이 분석을 요청하였습니다')
+
+    # 현재 시간
+    # 몽고 디비에 data 업데이트 할 때 사용
+    now = datetime.now()
+    # 이미지를 저장할 이름을 현재 시간으로 설정 XXXX.XXXX
+    image_save_name = datetime.timestamp(now)
 
     file = request.files['video']
     video_path = os.path.join(VIDEO_SAVE_PATH, file.filename)
@@ -142,6 +151,7 @@ def upload_file():
 
     # 각 프레임의 키포인트를 dict 로 모음
     key_data = dict()
+
     for i, e in enumerate(events):
         cap.set(cv2.CAP_PROP_POS_FRAMES, e)
         _, img = cap.read()
@@ -165,7 +175,7 @@ def upload_file():
         # 오픈포즈 outputData에 헤드 좌표도 추가
         output_image = cv2.rectangle(datum.cvOutputData, (x, y), (x+w, y+h), (0, 0, 255), 2)
 
-        cv2.imwrite(f'{IMAGE_SAVE_PATH}{IMAGE_SAVE_NAME}_{str(i)}.png', output_image)
+        cv2.imwrite(f'{IMAGE_SAVE_PATH}{image_save_name}_{str(i)}.png', output_image)
 
     cap.release()
 
@@ -175,7 +185,18 @@ def upload_file():
     result = swing_anal.check_all()
 
     # result에 이미지가 저장되는 경로 넣어줌
-    result["image_path"] = IMAGE_SAVE_NAME
+    result["image_path"] = image_save_name
+
+    # 디비 업데이트 시 현재 날짜 필드
+    date_field = now.strftime('%Y-%m-%d')
+    col.update_one(
+        { "email": current_user},
+        { "$push": {
+                f"swingData.{date_field}": json.dumps(result)
+            }
+        }
+    )
+    print(f'{current_user} : {date_field} 스윙 분석 업데이트')
 
     return json.dumps(result, cls=MyEncoder)
 
@@ -241,7 +262,51 @@ def login():
 def latest_swing():
     current_user = get_jwt_identity()
     print(current_user)
+
+    doc = col.find_one(
+        {"email": current_user},
+        {"swingData.2021-03-23": {"$slice": -1}}
+    )
     return jsonify(current_user), 200
+
+
+@app.route('/test/update', methods=['POST'])
+@jwt_required()
+def test_update():
+    date = datetime.now().strftime('%Y-%m-%d')
+    data = request.json.get('data')
+    current_user = get_jwt_identity()
+    print(current_user)
+    # col.update_one(
+    #     {'email': 'ghgh'},
+    #     { "$push": {
+    #         f"data.{date}": "gogogo"
+    #     }}
+    # )
+    # print('done')
+
+    doc = col.find_one(
+        { "email": current_user},
+        { "swingData.2021-03-23": { "$slice": -1} }
+    )
+    print(doc)
+    print(type(doc))
+    print(doc["swingData"]["2021-03-23"][0])
+    print(len(doc["swingData"]["2021-03-23"]))
+    print(type(doc["swingData"]["2021-03-23"][0]))
+    print(dumps(doc))
+    print(type(dumps(doc)))
+
+    # doc = col.find_one(
+    #     {
+    #         "email": "bb",
+    #     }
+    # )
+    #
+    # a = doc["data"]
+    # print(len(a))
+
+    return 'update done'
 
 
 if __name__ == '__main__':
