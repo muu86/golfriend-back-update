@@ -69,7 +69,7 @@ def upload_file():
     image_save_name = datetime.timestamp(now)
 
     file = request.files['video']
-    video_path = os.path.join(VIDEO_SAVE_PATH, file.filename)
+    video_path = os.path.join(VIDEO_SAVE_PATH, str(image_save_name))
     # print('현재경로는: ', os.getcwd())
     # print('비디오 파일 저장 경로는: ', video_path)
     file.save(video_path)
@@ -185,18 +185,20 @@ def upload_file():
     result = swing_anal.check_all()
 
     # result에 이미지가 저장되는 경로 넣어줌
-    result["image_path"] = image_save_name
+    result["filePath"] = image_save_name
 
-    # 디비 업데이트 시 현재 날짜 필드
-    date_field = now.strftime('%Y-%m-%d')
+    # 결과 데이터에 업로드 날짜 추가
+    upload_date = now.strftime('%Y-%m-%d')
+    result["date"] = upload_date
     col.update_one(
         { "email": current_user},
         { "$push": {
-                f"swingData.{date_field}": json.dumps(result)
+                f"swingData": json.dumps(result, ensure_ascii=False)
             }
         }
     )
-    print(f'{current_user} : {date_field} 스윙 분석 업데이트')
+    print(json.dumps(result))
+    print(f'{current_user} : {upload_date}, 스윙 분석 업데이트')
 
     return json.dumps(result, cls=MyEncoder)
 
@@ -212,6 +214,14 @@ def get_images(image_name, i):
             as_attachment=True)
     except FileNotFoundError:
         abort(404)
+
+
+# 클라이언트가 가지고 있는 토큰이 유효기간이 지났는지 체크
+# 유효기간 지났다면 401 status 될 것
+@app.route('/check-token')
+@jwt_required()
+def check_token():
+    return 'good'
 
 
 @app.route('/signup', methods=['POST'])
@@ -265,9 +275,15 @@ def latest_swing():
 
     doc = col.find_one(
         {"email": current_user},
-        {"swingData.2021-03-23": {"$slice": -1}}
+        {"swingData": {"$slice": -1}}
     )
-    return jsonify(current_user), 200
+    print(type(doc["swingData"][0]))
+    return {
+        "userName": doc["firstName"],
+        "swingData": json.loads(doc["swingData"][0])
+    }, 200
+        # "userName": doc["firstName"],
+
 
 
 @app.route('/test/update', methods=['POST'])

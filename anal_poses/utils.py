@@ -22,6 +22,12 @@ def p2_diff(a, b):
     return a - b
 
 
+def add_korean_keyword(feedback, word_dict):
+    for eng, kor in word_dict.items():
+        feedback[eng][3] = kor
+    return feedback
+
+
 class MyEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.integer):

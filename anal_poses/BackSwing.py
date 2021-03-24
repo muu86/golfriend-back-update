@@ -1,6 +1,7 @@
 import numpy as np
 from anal_poses.utils import p3_angle
 from anal_poses.utils import p2_diff
+from anal_poses.utils import add_korean_keyword
 
 
 # 2번 자세
@@ -34,13 +35,13 @@ class BackSwing:
             self.feedback["sway"] = {
                 0: 1,
                 1: diff[0],
-                2: "골반과 몸통이 축을 중심으로 회전하지 않고, 좌우로 밀리고 있습니다. 스윙의 축이 변하여 정확한 임팩트가 어렵고 거리 손실을 보게 됩니다."
+                2: "골반과 몸통이 축을 중심으로 회전하지 않고, 좌우로 밀리고 있습니다. 스윙의 축이 변하여 정확한 임팩트가 어렵고 거리 손실을 보게 됩니다.",
             }
         else:
             self.feedback["sway"] = {
                 0: 0,
                 1: diff[0],
-                2: "골반과 몸통이 축을 중심으로 회전하지 않고, 좌우로 밀리고 있습니다. 스윙의 축이 변하여 정확한 임팩트가 어렵고 거리 손실을 보게 됩니다."
+                2: "골반과 몸통이 축을 중심으로 회전하지 않고, 좌우로 밀리고 있습니다. 스윙의 축이 변하여 정확한 임팩트가 어렵고 거리 손실을 보게 됩니다.",
             }
 
     # 헤드 포지션 체크
@@ -56,19 +57,19 @@ class BackSwing:
             self.feedback['head_position'] = {
                 0: 2,
                 1: diff[1],
-                2: "척추 각도가 안정적입니다."
+                2: "척추 각도가 안정적입니다.",
             }
         elif -40 <= diff[1] <= 40:
             self.feedback['head_position'] = {
                 0: 1,
                 1: diff[1],
-                2: "척추 각도가 무너져 머리가 상하로 움직이고 있습니다. 어드레스 시 만들었던 척추 각도가 임팩트까지 유지되어야 합니다. 척추 각도가 무너지면 스윙 궤도 또한 불안정해져 일관된 샷을 칠 수 없습니다."
+                2: "척추 각도가 무너져 머리가 상하로 움직이고 있습니다. 어드레스 시 만들었던 척추 각도가 임팩트까지 유지되어야 합니다. 척추 각도가 무너지면 스윙 궤도 또한 불안정해져 일관된 샷을 칠 수 없습니다.",
             }
         else:
             self.feedback['head_position'] = {
                 0: 0,
                 1: diff[1],
-                2: "척추 각도가 무너져 머리가 상하로 움직이고 있습니다. 어드레스 시 만들었던 척추 각도가 임팩트까지 유지되어야 합니다. 척추 각도가 무너지면 스윙 궤도 또한 불안정해져 일관된 샷을 칠 수 없습니다."
+                2: "척추 각도가 무너져 머리가 상하로 움직이고 있습니다. 어드레스 시 만들었던 척추 각도가 임팩트까지 유지되어야 합니다. 척추 각도가 무너지면 스윙 궤도 또한 불안정해져 일관된 샷을 칠 수 없습니다.",
             }
 
     def reverse_pivot(self):
@@ -106,13 +107,13 @@ class BackSwing:
             self.feedback["foot_flying"] = {
                 0: 2,
                 1: diff[1],
-                2: ""
+                2: "왼발 들림이 없습니다",
             }
         elif diff[1] < -25:
             self.feedback["foot_flying"] = {
                 0: 0,
                 1: diff[1],
-                2: "백스윙 시 왼발을 들면 더 큰 회전력을 얻을 수 있지만 스윙의 일관성이 떨어질 수 있습니다. 권장되는 방법은 아닙니다."
+                2: "백스윙 시 왼발을 들면 더 큰 회전력을 얻을 수 있지만 스윙의 일관성이 떨어질 수 있습니다. 권장되는 방법은 아닙니다.",
             }
 
     # 왼 팔의 구부러짐 체크
@@ -124,22 +125,22 @@ class BackSwing:
         angle = p3_angle(lshoulder, lelbow, lwrist)
 
         if 140 <= angle:
-            self.feedback["bending_arms"] = {
+            self.feedback["bending_left_arm"] = {
                 0: 2,
                 1: angle,
-                2: "팔 구부러짐이 없습니다."
+                2: "팔 구부러짐이 없습니다.",
             }
         elif 125 <= angle:
-            self.feedback["bending_arms"] = {
+            self.feedback["bending_left_arm"] = {
                 0: 1,
                 1: angle,
-                2: "손을 몸에서 멀리 밀면 클럽이 더 먼 거리를 이동하게 됩니다. 샷의 일관성 또한 향상됩니다."
+                2: "손을 몸에서 멀리 밀면 클럽이 더 먼 거리를 이동하게 됩니다. 샷의 일관성 또한 향상됩니다.",
             }
         else:
-            self.feedback["bending_arms"] = {
+            self.feedback["bending_left_arm"] = {
                 0: 0,
                 1: angle,
-                2: "손을 몸에서 멀리 밀면 클럽이 더 먼 거리를 이동하게 됩니다. 샷의 일관성 또한 향상됩니다."
+                2: "손을 몸에서 멀리 밀면 클럽이 더 먼 거리를 이동하게 됩니다. 샷의 일관성 또한 향상됩니다.",
             }
 
     def left_knee_moving(self):
@@ -153,7 +154,7 @@ class BackSwing:
             self.feedback["left_knee_moving"] = {
                 0: 2,
                 1: angle,
-                2: "good"
+                2: "무릎이 안정적으로 움직이고 있습니다.",
             }
         elif 160 <= angle:
             self.feedback["left_knee_moving"] = {
@@ -177,4 +178,16 @@ class BackSwing:
         self.bending_left_arm()
         self.left_knee_moving()
 
-        return self.feedback
+        feedback = add_korean_keyword(self.feedback, KOREAN_KEYWORD)
+
+        return feedback
+
+
+KOREAN_KEYWORD = {
+    "sway": "스웨이",
+    "head_position": "헤드 포지션",
+    "reverse_pivot": "리버스 피벗",
+    "foot_flying": "발이 땅에서 떨어짐",
+    "bending_left_arm": "왼 팔 구부러짐",
+    "left_knee_moving": "왼 다리 움직임이 불안정",
+}
