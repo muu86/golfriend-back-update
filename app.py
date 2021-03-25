@@ -69,7 +69,7 @@ def upload_file():
     image_save_name = datetime.timestamp(now)
 
     file = request.files['video']
-    video_path = os.path.join(VIDEO_SAVE_PATH, str(image_save_name))
+    video_path = os.path.join(VIDEO_SAVE_PATH, f"{str(image_save_name)}.mp4")
     # print('현재경로는: ', os.getcwd())
     # print('비디오 파일 저장 경로는: ', video_path)
     file.save(video_path)
@@ -200,6 +200,32 @@ def upload_file():
     print(json.dumps(result))
     print(f'{current_user} : {upload_date}, 스윙 분석 업데이트')
 
+    # 분석 횟 수가 일정 횟수 이상이면 뱃지 발급
+    # current_user_doc = col.find_one({ "email": current_user })
+    # counts = len(current_user_doc["swingData"])
+    # print('분석 횟수는: ', counts)
+    # if counts >= 10 and 'analysis_10' not in current_user_doc["badges"]:
+    #     col.update_one(
+    #         { "email": current_user},
+    #         { "$push": {
+    #             "badges": "analysis_10"
+    #         }}
+    #     )
+    # if counts >= 30 and 'analysis_30' not in current_user_doc["badges"]:
+    #     col.update_one(
+    #         { "email": current_user},
+    #         { "$push": {
+    #             "badges": "analysis_50"
+    #         }}
+    #     )
+    # if counts >= 50 and 'analysis_50' not in current_user_doc["badges"]:
+    #     col.update_one(
+    #         { "email": current_user},
+    #         { "$push": {
+    #             "badges": "analysis_50"
+    #         }}
+    #     )
+
     return json.dumps(result, cls=MyEncoder)
 
 
@@ -234,11 +260,15 @@ def sign_up():
 
     print(f'{email}, {last_name}, {first_name}, {password} 가입 신청')
 
+    # 처음 가입 시 signUp 배지 발급
     user = {
         'lastName': last_name,
         'firstName': first_name,
         'password': password,
-        'email': email
+        'email': email,
+        'badges': [
+            'sign_up',
+        ]
     }
 
     col.insert(user)
@@ -267,62 +297,91 @@ def login():
         return 'bad'
 
 
-@app.route('/latest-swing')
+@app.route('/past-swing')
 @jwt_required()
-def latest_swing():
+def past_swing():
     current_user = get_jwt_identity()
     print(current_user)
 
     doc = col.find_one(
         {"email": current_user},
-        {"swingData": {"$slice": -1}}
+        {"swingData": {"$slice": -5}}
     )
-    print(type(doc["swingData"][0]))
-    return {
-        "userName": doc["firstName"],
-        "swingData": json.loads(doc["swingData"][0])
-    }, 200
-        # "userName": doc["firstName"],
+    print(doc['swingData'])
+    print(type(doc['swingData'][0]))
+    print(len(doc['swingData']))
+    print(doc)
+    if 'swingData' in doc.keys():
+        return {
+            "userName": doc["firstName"],
+            "swingData": doc['swingData'][0],
+            "badges": doc['badges']
+        }, 200
+    else:
+        return {
+            "userName": doc["firstName"],
+            "swingData": {},
+            "badges": doc['badges']
+        }, 200
 
 
-
-@app.route('/test/update', methods=['POST'])
+# 유저가 어떤 뱃지를 갖고 있는지 체크하는 라우트
+@app.route('/get-my-badges')
 @jwt_required()
-def test_update():
-    date = datetime.now().strftime('%Y-%m-%d')
-    data = request.json.get('data')
+def get_my_badges():
     current_user = get_jwt_identity()
-    print(current_user)
-    # col.update_one(
-    #     {'email': 'ghgh'},
-    #     { "$push": {
-    #         f"data.{date}": "gogogo"
-    #     }}
-    # )
-    # print('done')
+    user_badges = col.find_one({ "email": current_user })["badges"]
+    print(type(user_badges))
+    return { "badges": user_badges }
+
+
+# 이미지 요청 처리
+@app.route('/get-image/<image_name>')
+@jwt_required()
+def get_image(image_name):
+    current_user = get_jwt_identity()
+    print('이미지 요청: ', current_user)
+
+    # requested_image = request.args.get('name')
+    print(f'{current_user}님이 이미지: {image_name}요청')
+    return send_from_directory('data/images/output_images', f"{image_name}.png")
+    # # 뱃지 이미지 요청 시
+    # if request.args.get("type") == "badges":
+    #     # 유저가 어떤 뱃지를 갖고 있는 지 검색
+    #     badge = request.args.get("name")
+    #     print(f'{current_user}님이 뱃지 이미지: {badge} 요청')
+    #     return send_from_directory('data/images/badges', f"{badge}")
+
+
+# 유저 뱃지
+@app.route('/get-badge-image/<badge_name>')
+@jwt_required()
+def get_badge_image(badge_name):
+    current_user = get_jwt_identity()
+    # badge = request.args.get('name')
+    return send_from_directory('data/images/badges', f"{badge_name}.png")
+
+
+
+
+# 비디오 요청 처리
+@app.route('/get-video')
+@jwt_required()
+def get_video():
+    pass
+
+
+@app.route('/test/update')
+def test_update():
+    # current_user = get_jwt_identity()
+    # print(current_user)
 
     doc = col.find_one(
-        { "email": current_user},
-        { "swingData.2021-03-23": { "$slice": -1} }
+        {"email": 'dd'},
+        {"swingData": {"$slice": -30}}
     )
-    print(doc)
-    print(type(doc))
-    print(doc["swingData"]["2021-03-23"][0])
-    print(len(doc["swingData"]["2021-03-23"]))
-    print(type(doc["swingData"]["2021-03-23"][0]))
-    print(dumps(doc))
-    print(type(dumps(doc)))
 
-    # doc = col.find_one(
-    #     {
-    #         "email": "bb",
-    #     }
-    # )
-    #
-    # a = doc["data"]
-    # print(len(a))
-
-    return 'update done'
+    return { 'swingData': doc['swingData']}
 
 
 if __name__ == '__main__':
