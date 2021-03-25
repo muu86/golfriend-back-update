@@ -14,16 +14,16 @@ from anal_poses.FollowThrough import FollowThrough
 class Anal:
     result = dict()
 
-    def __init__(self, kp):
+    def __init__(self, kp, face_on=True):
         self.kp = kp
-        self.address = Address(kp)
-        self.takeaway = TakeAway(kp)
-        self.backswing = BackSwing(kp)
-        self.top = Top(kp)
-        self.downswing = DownSwing(kp)
-        self.impact = Impact(kp)
-        self.release = Release(kp)
-        self.followthrough = FollowThrough(kp)
+        self.address = Address(kp, face_on=True)
+        self.takeaway = TakeAway(kp, face_on=True)
+        self.backswing = BackSwing(kp, face_on=True)
+        self.top = Top(kp, face_on=True)
+        self.downswing = DownSwing(kp, face_on=True)
+        self.impact = Impact(kp, face_on=True)
+        self.release = Release(kp, face_on=True)
+        self.followthrough = FollowThrough(kp, face_on=True)
 
     def check_all(self):
         self.result[0] = self.address.run()

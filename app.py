@@ -20,9 +20,13 @@ from bson.json_util import dumps
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
 
 # openpose 패스 설정
-op_path = "C:/openpose/bin/python/openpose/Release"
-sys.path.append(op_path)
-os.environ['PATH'] = os.environ['PATH'] + ';' + 'C:/openpose/bin'
+# op_path = "C:/openpose/bin/python/openpose/Release"
+# sys.path.append(op_path)
+# os.environ['PATH'] = os.environ['PATH'] + ';' + 'C:/openpose/bin'
+
+# openpose 경로 집
+sys.path.append("C:\\openpose\\build\\python\\openpose\\Release")
+os.environ['PATH'] = os.environ['PATH'] + ';' + 'C:\\penpose\\build\\bin'
 
 # openpose import
 try:
@@ -172,7 +176,7 @@ def upload_file():
         _kp = datum.poseKeypoints[0]
         key_data[i] = np.append(_kp, [club_head_list], axis=0)
 
-        # 오픈포즈 outputData에 헤드 좌표도 추가
+        # 오픈포즈 outputData에 클럽 헤드 좌표도 추가
         output_image = cv2.rectangle(datum.cvOutputData, (x, y), (x+w, y+h), (0, 0, 255), 2)
 
         cv2.imwrite(f'{IMAGE_SAVE_PATH}{image_save_name}_{str(i)}.png', output_image)
@@ -180,7 +184,7 @@ def upload_file():
     cap.release()
 
     # 뽑아낸 키포인트를 분석
-    swing_anal = Anal.Anal(key_data)
+    swing_anal = Anal.Anal(key_data, face_on=True)
 
     result = swing_anal.check_all()
 
@@ -235,7 +239,7 @@ def get_images(image_name, i):
     print(i)
     try:
         return send_from_directory(
-            "C:\\Users\\USER\\PycharmProjects\\golfriend\\data\\images\\output_images",
+            'data/images/output_images',
             filename=f"{image_name}_{i}.png",
             as_attachment=True)
     except FileNotFoundError:
@@ -305,24 +309,15 @@ def past_swing():
 
     doc = col.find_one(
         {"email": current_user},
-        {"swingData": {"$slice": -5}}
+        {"swingData": {"$slice": -1}}
     )
     print(doc['swingData'])
-    print(type(doc['swingData'][0]))
-    print(len(doc['swingData']))
-    print(doc)
+    print(doc["swingData"])
+    print(type(json.dumps(doc["swingData"])[0]))
     if 'swingData' in doc.keys():
-        return {
-            "userName": doc["firstName"],
-            "swingData": doc['swingData'][0],
-            "badges": doc['badges']
-        }, 200
+        return { "swingData": json.dumps(doc['swingData'][0], ensure_ascii=False) }, 200
     else:
-        return {
-            "userName": doc["firstName"],
-            "swingData": {},
-            "badges": doc['badges']
-        }, 200
+        return json.dumps([]), 200
 
 
 # 유저가 어떤 뱃지를 갖고 있는지 체크하는 라우트

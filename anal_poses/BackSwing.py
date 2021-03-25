@@ -6,8 +6,9 @@ from anal_poses.utils import add_korean_keyword
 
 # 2번 자세
 class BackSwing:
-    def __init__(self, kp):
+    def __init__(self, kp, face_on=True):
         self.kp = kp
+        self.face_on = face_on
         self.feedback = dict()
 
     # 스웨이 체크
@@ -168,19 +169,53 @@ class BackSwing:
                 1: angle,
                 2: "체중 이동 중 왼 다리가 과다하게 이동해서는 안 됩니다. 왼 무릎이 공을 바라본다고 생각하세요."
             }
+    '''
+    --------------------------------------------------------------------
+    측면
+    --------------------------------------------------------------------
+    '''
+    #도훈 만듬 (측면) 무릎의 구부러짐
+    def bending_knee(self):
+        lhip = self.kp[2][12]
+        lknee = self.kp[2][13]
+        lfoot = self.kp[2][14]
+
+        angle = p3_angle(lhip, lknee, lfoot)
+
+        if 140 <= angle <= 150:
+            self.feedback["bending_knee"] = {
+                0: 2,
+                1: angle,
+                2: "골반 움직임이 안정적입니다."
+            }
+        elif 135 <= angle <= 158 :
+            self.feedback["bending_knee"] = {
+                0: 1,
+                1: angle,
+                2: "오른 무릎에 적당한 유연함이 필요합니다. 무릎을 너무 펴서 다리가 잠기게 되면 골반이 오른쪽으로 틀어지게 돼 스윙 궤도가 불안정해집니다."
+            }
+        else:
+            self.feedback["bending_knee"] = {
+                0: 0,
+                1: angle,
+                2: "오른 무릎에 적당한 유연함이 필요합니다. 무릎을 너무 펴서 다리가 잠기게 되면 골반이 오른쪽으로 틀어지게 돼 스윙 궤도가 불안정해집니다."
+            }
 
     # 모든 함수를 실행시킴
     def run(self):
-        self.sway()
-        self.head_position()
-        self.reverse_pivot()
-        self.foot_fliyng()
-        self.bending_left_arm()
-        self.left_knee_moving()
+        if self.face_on:
+            self.sway()
+            self.head_position()
+            self.reverse_pivot()
+            self.foot_fliyng()
+            self.bending_left_arm()
+            self.left_knee_moving()
+        else:
+            self.bending_knee()
 
-        feedback = add_korean_keyword(self.feedback, KOREAN_KEYWORD)
+        add_korean_keyword(self.feedback, KOREAN_KEYWORD)
 
-        return feedback
+        return self.feedback
 
 
 KOREAN_KEYWORD = {
@@ -190,4 +225,8 @@ KOREAN_KEYWORD = {
     "foot_flying": "발이 땅에서 떨어짐",
     "bending_left_arm": "왼 팔 구부러짐",
     "left_knee_moving": "왼 다리 움직임이 불안정",
+    '''
+    -----------------------------------------
+    '''
+    "bending_knee": "무릎의 구부러짐"
 }
