@@ -20,13 +20,13 @@ from bson.json_util import dumps
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
 
 # openpose 패스 설정
-# op_path = "C:/openpose/bin/python/openpose/Release"
-# sys.path.append(op_path)
-# os.environ['PATH'] = os.environ['PATH'] + ';' + 'C:/openpose/bin'
+op_path = "C:/openpose/bin/python/openpose/Release"
+sys.path.append(op_path)
+os.environ['PATH'] = os.environ['PATH'] + ';' + 'C:/openpose/bin'
 
 # openpose 경로 집
-sys.path.append("C:\\openpose\\build\\python\\openpose\\Release")
-os.environ['PATH'] = os.environ['PATH'] + ';' + 'C:\\penpose\\build\\bin'
+# sys.path.append("C:\\openpose\\build\\python\\openpose\\Release")
+# os.environ['PATH'] = os.environ['PATH'] + ';' + 'C:\\penpose\\build\\bin'
 
 # openpose import
 try:
@@ -194,14 +194,18 @@ def upload_file():
     # 결과 데이터에 업로드 날짜 추가
     upload_date = now.strftime('%Y-%m-%d')
     result["date"] = upload_date
+    # col.update_one(
+    #     { "email": current_user},
+    #     { "$push": {
+    #             f"swingData": json.dumps(result, ensure_ascii=False)
+    #         }
+    #     }
+    # )
     col.update_one(
-        { "email": current_user},
-        { "$push": {
-                f"swingData": json.dumps(result, ensure_ascii=False)
-            }
-        }
+        {"email": current_user},
+        {"$push": {"swingData": result}}
     )
-    print(json.dumps(result))
+    # print(json.dumps(result))
     print(f'{current_user} : {upload_date}, 스윙 분석 업데이트')
 
     # 분석 횟 수가 일정 횟수 이상이면 뱃지 발급
@@ -230,7 +234,8 @@ def upload_file():
     #         }}
     #     )
 
-    return json.dumps(result, cls=MyEncoder)
+    # return json.dumps(result, cls=MyEncoder)
+    return result
 
 
 @app.route('/images/<path:image_name>/<int:i>')
@@ -307,15 +312,18 @@ def past_swing():
     current_user = get_jwt_identity()
     print(current_user)
 
+    swing_index = request.args.get('index')
     doc = col.find_one(
         {"email": current_user},
-        {"swingData": {"$slice": -1}}
+        {"swingData": {"$slice": -1 - int(swing_index)}}
     )
-    print(doc['swingData'])
-    print(doc["swingData"])
-    print(type(json.dumps(doc["swingData"])[0]))
+    
+    print(swing_index, '번 데이터에 대한 요청')
     if 'swingData' in doc.keys():
-        return { "swingData": json.dumps(doc['swingData'][0], ensure_ascii=False) }, 200
+        try:
+            return doc['swingData'][-1 - int(swing_index)]
+        except IndexError:
+            return 'no more data'
     else:
         return json.dumps([]), 200
 
@@ -327,7 +335,7 @@ def get_my_badges():
     current_user = get_jwt_identity()
     user_badges = col.find_one({ "email": current_user })["badges"]
     print(type(user_badges))
-    return { "badges": user_badges }
+    return user_badges
 
 
 # 이미지 요청 처리

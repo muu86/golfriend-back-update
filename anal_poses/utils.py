@@ -27,6 +27,16 @@ def add_korean_keyword(feedback, word_dict):
         feedback[key][3] = word_dict[key]
 
 
+def key_to_str(feedback):
+    new_dict = dict()
+    for key, item in feedback.items():
+        for key1, item1 in feedback[key].items():
+            if not new_dict[key]:
+                new_dict[key] = {}
+            new_dict[key][str(key)] = item1
+    return new_dict
+
+
 class MyEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.integer):
