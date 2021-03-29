@@ -20,13 +20,13 @@ from bson.json_util import dumps
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
 
 # openpose 패스 설정
-op_path = "C:/openpose/bin/python/openpose/Release"
-sys.path.append(op_path)
-os.environ['PATH'] = os.environ['PATH'] + ';' + 'C:/openpose/bin'
+# op_path = "C:/openpose/bin/python/openpose/Release"
+# sys.path.append(op_path)
+# os.environ['PATH'] = os.environ['PATH'] + ';' + 'C:/openpose/bin'
 
 # openpose 경로 집
-# sys.path.append("C:\\openpose\\build\\python\\openpose\\Release")
-# os.environ['PATH'] = os.environ['PATH'] + ';' + 'C:\\penpose\\build\\bin'
+sys.path.append("C:\\openpose\\build\\python\\openpose\\Release")
+os.environ['PATH'] = os.environ['PATH'] + ';' + 'C:\\penpose\\build\\bin'
 
 # openpose import
 try:
@@ -209,30 +209,37 @@ def upload_file():
     print(f'{current_user} : {upload_date}, 스윙 분석 업데이트')
 
     # 분석 횟 수가 일정 횟수 이상이면 뱃지 발급
-    # current_user_doc = col.find_one({ "email": current_user })
-    # counts = len(current_user_doc["swingData"])
-    # print('분석 횟수는: ', counts)
-    # if counts >= 10 and 'analysis_10' not in current_user_doc["badges"]:
-    #     col.update_one(
-    #         { "email": current_user},
-    #         { "$push": {
-    #             "badges": "analysis_10"
-    #         }}
-    #     )
-    # if counts >= 30 and 'analysis_30' not in current_user_doc["badges"]:
-    #     col.update_one(
-    #         { "email": current_user},
-    #         { "$push": {
-    #             "badges": "analysis_50"
-    #         }}
-    #     )
-    # if counts >= 50 and 'analysis_50' not in current_user_doc["badges"]:
-    #     col.update_one(
-    #         { "email": current_user},
-    #         { "$push": {
-    #             "badges": "analysis_50"
-    #         }}
-    #     )
+    current_user_doc = col.find_one({ "email": current_user })
+    counts = len(current_user_doc["swingData"])
+    print('분석 횟수는: ', counts)
+    if counts == 1:
+        col.update_one(
+            { 'email': current_user },
+            { '$push': {
+                'badges': 'analysis_1'
+            }}
+        )
+    if counts == 10:
+        col.update_one(
+            { "email": current_user},
+            { "$push": {
+                "badges": "analysis_10"
+            }}
+        )
+    if counts == 30:
+        col.update_one(
+            { "email": current_user},
+            { "$push": {
+                "badges": "analysis_50"
+            }}
+        )
+    if counts == 50 and 'analysis_50' not in current_user_doc["badges"]:
+        col.update_one(
+            { "email": current_user},
+            { "$push": {
+                "badges": "analysis_50"
+            }}
+        )
 
     # return json.dumps(result, cls=MyEncoder)
     return result
@@ -277,7 +284,10 @@ def sign_up():
         'email': email,
         'badges': [
             'sign_up',
-        ]
+        ],
+        'likes': [],
+        'comments': [],
+        'swingData': []
     }
 
     col.insert(user)
@@ -329,9 +339,9 @@ def get_past_swing():
 
 
 # 유저가 어떤 뱃지를 갖고 있는지 체크하는 라우트
-@app.route('/get-my-badges')
+@app.route('/get-user-info')
 @jwt_required()
-def get_my_badges():
+def get_user_info():
     current_user = get_jwt_identity()
     doc = col.find_one({ "email": current_user })
     print(type(doc))
@@ -378,11 +388,26 @@ def post_social_video():
     now = datetime.now()
     upload_date = now.strftime('%Y-%m-%d-%H-%M')
     db.social.insert_one({
-        "userName": current_user,
+        "email": current_user,
         "date": upload_date,
         "videoName": video_name,
-        "likes": 0,
+        "likes": [],
+        "comments": []
     })
+    col.update_one(
+        { 'email': current_user },
+        { '$push': {
+            'socialUploads': str(video_name)
+        }}
+    )
+    social_uploads_counts = len(col.find_one({ 'email': current_user })["socialUploads"])
+    if social_uploads_counts == 1:
+        col.update_one(
+            { 'email': current_user },
+            { '$push': {
+                'badges': 'share_1'
+            }}
+        )
     return "success"
 
 
@@ -405,14 +430,18 @@ def get_social_video():
 
 
 @app.route('/get-social-video-likes')
-def get_social_video_likes():
-    video_name = request.args.get('name')
-    return db.social.find_one({ 'videoName': video_name })['likes']
-
-
-@app.route('/like')
 @jwt_required()
-def put_like():
+def get_social_video_likes():
+    current_user = get_jwt_identity()
+    video_name = request.args.get('name')
+    return {
+        'likes': col.find_one({ 'email': current_user })['likes']
+     }
+
+
+@app.route('/update-like')
+@jwt_required()
+def update_like():
     current_user = get_jwt_identity()
     video_name = request.args.get('name')
     like_type = request.args.get('type')
@@ -421,41 +450,65 @@ def put_like():
         likes = db.social.find_one({'videoName': video_name})['likes']
         db.social.update_one(
             {'videoName': video_name},
-            {'$set': {
-                'likes': int(likes) + 1
-            }
-            }
+            {'$push': {
+                'likes': current_user
+            }}
         )
         # 커런트 유저의 좋아요 목록 업데이트
         col.update_one(
             {'email': current_user},
             {'$push': {
-                'likeList': video_name
+                'likes': video_name
             }}
         )
     elif like_type == "minus":
-        # 현재 좋아요 숫자에서 + 1
-        likes = db.social.find_one({'videoName': video_name})['likes']
+        # 비디오의 좋아요 리스트에서 유저 제거
+        video_likeList = db.social.find_one({'videoName': video_name})['likes']
+        removed_user = video_likeList.pop(video_likeList.index(current_user))
         db.social.update_one(
             {'videoName': video_name},
             {'$set': {
-                'likes': int(likes) - 1
-            }
+                'likes': video_likeList
+                }
             }
         )
-        # 커런트 유저의 좋아요 목록 가져오기
-        users_doc = col.find_one({ "email": current_user })['likes']
-
-
+        # 유저의 좋아요 목록에서 비디오 제거
+        user_likeList = col.find_one({ "email": current_user })['likes']
+        removed_video = user_likeList.pop(user_likeList.index(video_name))
         col.update_one(
-            {'email': current_user},
-            {'$push': {
-                'likeList': video_name
-            }}
+            { 'email': current_user },
+            { '$set': { 'likes': user_likeList }}
         )
 
+        print(len(db.social.find_one({ 'videoName': video_name })['likes']))
+    return { 'counts': len(db.social.find_one({ 'videoName': video_name })['likes'])}
 
-    return 'success'
+
+@app.route('/post-comment', methods=['POST'])
+@jwt_required()
+def post_comment():
+    current_user = get_jwt_identity()
+    comment = request.json.get('comment')
+    video_name = request.json.get('videoName')
+    col.update_one(
+        { 'email': current_user },
+        { '$push': {
+            'comments': {
+                'videoName': video_name,
+                'comment': comment
+            }
+        }}
+    )
+    db.social.update_one(
+        { 'videoName': video_name },
+        { '$push': {
+            'comments': {
+                'email': current_user,
+                'comment': comment
+            }
+        }}
+    )
+    return "succes"
 
 
 @app.route('/test/update')
