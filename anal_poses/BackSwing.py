@@ -11,6 +11,7 @@ class BackSwing:
         self.kp = kp
         self.face_on = face_on
         self.feedback = dict()
+        self.height = self.kp[0][1][1] - self.kp[0][11][1]
 
     # 스웨이 체크
     # 골반과 몸통이 회전하는 것이 아니라 오른쪽으로 밀리면서 체중 이동 하는 것
@@ -18,14 +19,14 @@ class BackSwing:
         lhip_address = self.kp[0][9]
         lhip_backswing = self.kp[2][9]
 
-        diff = np.array(lhip_address) - np.array(lhip_backswing)
+        diff = p2_diff(lhip_address, lhip_backswing)[0] / self.height
 
         # 640 * 640 이미지 기준
         # -50~ 50 사이
-        if -10 <= diff[0] <= 10:
+        if -0.8 <= diff <= 0.4:
             self.feedback["sway"] = {
                 0: 2,
-                1: diff[0],
+                1: diff,
                 2: "상체가 축을 중심으로 회전하고 있습니다.",
             }
         # elif -20 <= diff[0] <= 20:
@@ -33,16 +34,16 @@ class BackSwing:
         #         0: 4,
         #         1: diff[0]
         #     }
-        elif -30 <= diff[0] <= 30:
+        elif -1.0 <= diff <= 1.0:
             self.feedback["sway"] = {
                 0: 1,
-                1: diff[0],
+                1: diff,
                 2: "골반과 몸통이 축을 중심으로 회전하지 않고, 좌우로 밀리고 있습니다. 스윙의 축이 변하여 정확한 임팩트가 어렵고 거리 손실을 보게 됩니다.",
             }
         else:
             self.feedback["sway"] = {
                 0: 0,
-                1: diff[0],
+                1: diff,
                 2: "골반과 몸통이 축을 중심으로 회전하지 않고, 좌우로 밀리고 있습니다. 스윙의 축이 변하여 정확한 임팩트가 어렵고 거리 손실을 보게 됩니다.",
             }
 
@@ -53,24 +54,24 @@ class BackSwing:
     def head_position(self):
         nose_address = self.kp[0][0]
         nose_backswing = self.kp[2][0]
-        diff = np.array(nose_address) - np.array(nose_backswing)
+        diff = p2_diff(nose_address, nose_backswing)[1] / self.height
 
-        if -20 <= diff[1] <= 20:
+        if -0.001 <= diff <= 0.001:
             self.feedback['head_position'] = {
                 0: 2,
-                1: diff[1],
+                1: diff,
                 2: "척추 각도가 안정적입니다.",
             }
-        elif -40 <= diff[1] <= 40:
+        elif -0.002 <= diff <= 0.002:
             self.feedback['head_position'] = {
                 0: 1,
-                1: diff[1],
+                1: diff,
                 2: "척추 각도가 무너져 머리가 상하로 움직이고 있습니다. 어드레스 시 만들었던 척추 각도가 임팩트까지 유지되어야 합니다. 척추 각도가 무너지면 스윙 궤도 또한 불안정해져 일관된 샷을 칠 수 없습니다.",
             }
         else:
             self.feedback['head_position'] = {
                 0: 0,
-                1: diff[1],
+                1: diff,
                 2: "척추 각도가 무너져 머리가 상하로 움직이고 있습니다. 어드레스 시 만들었던 척추 각도가 임팩트까지 유지되어야 합니다. 척추 각도가 무너지면 스윙 궤도 또한 불안정해져 일관된 샷을 칠 수 없습니다.",
             }
 
@@ -100,6 +101,7 @@ class BackSwing:
                 2: "백스윙 자세에서 체중이 앞발로 이동하고 있습니다. 역피봇은 볼의 윗부분을 맟출 확률을 높이고 thin shots를 유도합니다.",
             }
 
+    # 수정 필요!
     def foot_fliyng(self):
         lf_address = self.kp[0][21]
         lf_backswing = self.kp[2][21]
@@ -216,7 +218,7 @@ class BackSwing:
 
         add_korean_keyword(self.feedback, KOREAN_KEYWORD)
 
-        return key_to_str(self.feedback)
+        return self.feedback
 
 
 KOREAN_KEYWORD = {

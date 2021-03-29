@@ -10,37 +10,33 @@ class Address:
         self.kp = kp
         self.face_on = face_on
         self.feedback = dict()
+        self.height = self.kp[0][1][1] - self.kp[0][11][1]
 
     # 도훈 만듬 (스탠스 거리)
     def stance(self):
-        rfoot = self.kp[0][11]
-        lfoot = self.kp[0][14]
+        shoulders = self.kp[0][5][0] - self.kp[0][2][0]
+        stance_diff = self.kp[0][14][0] - self.kp[0][11][0]
 
-        neck = self.kp[0][1]
-
-        height = (lfoot - neck)[1]
-
-        diff = np.array(rfoot) - np.array(lfoot) / height
-
+        diff = (shoulders - stance_diff) / self.height
         # 640 * 640 이미지 기준
         # -50~ 50 사이
-        if -0.2 <= diff[0] <= -0.5:
+        if 0.0 <= diff <= 0.3:
             self.feedback["stance"] = {
                 0: 2,
-                1: diff[0],
+                1: diff,
                 2: "스탠스가 안정적입니다.",
             }
-        elif -0.4 <= diff[0] <= -0.1:
+        elif 0.3 <= diff:
             self.feedback["stance"] = {
                 0: 1,
-                1: diff[0],
+                1: diff,
                 2: "스탠스가 넓습니다."
             }
-        else:
+        elif diff <= 0.0:
             self.feedback["stance"] = {
-                0: 0,
-                1: diff[0],
-                2: "스탠스가 넓습니다."
+                0: 1,
+                1: diff,
+                2: "스탠스가 좁습니다."
             }
 
     # 도훈 만듬 (측면 무릎 각도)
@@ -108,7 +104,7 @@ class Address:
         add_korean_keyword(self.feedback, KOREAN_KEYWORD)
 
         # 모든 키를 스트링으로 바꾼 결과 리턴
-        return key_to_str(self.feedback)
+        return self.feedback
 
 
 KOREAN_KEYWORD = {

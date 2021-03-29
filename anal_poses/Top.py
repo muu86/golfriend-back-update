@@ -10,6 +10,7 @@ class Top:
         self.kp = kp
         self.face_on = face_on
         self.feedback = dict()
+        self.height = self.kp[0][1][1] - self.kp[0][11][1]
 
     # 왼 팔의 구부러짐 체크
     def bending_left_arm(self):
@@ -95,13 +96,19 @@ class Top:
         nose_address = self.kp[0][0]
         nose_top = self.kp[3][0]
 
-        diff = p2_diff(nose_address, nose_top)
+        diff = p2_diff(nose_address, nose_top) / self.height
 
-        if 0 <= diff[1] <= 23:
+        if -0.1 <= diff[1] <= 0.5 :
             self.feedback["head_position"] = {
                 0: 2,
                 1: diff[1],
                 2: "등 각도 유지"
+            }
+        elif -0.2 <= diff[1] <= 1.0:
+            self.feedback["head_position"] = {
+                0: 1,
+                1: diff[1],
+                2: "어드레스 시 유지한 등과 골반의 각도를 유지하세요. 머리가 상하로 움직이고 있습니다."
             }
         else:
             self.feedback["head_position"] = {
@@ -161,13 +168,13 @@ class Top:
             self.feedback["parallel_shaft"] = {
                 0: 1,
                 1: angle,
-                2: "적절한 손목 힌지와 몸의 회전 시 클럽이 지면과 평행하게 되는 것이 자연스럽습니다. 너무 적거나 지나친 회전은 피해야 돼요."
+                2: "적절한 손목 힌지와 몸의 회전 시 클럽이 지면과 평행하게 되는 것이 자연스럽습니다. 너무 적거나 지나친 회전은 피해야합니다."
             }
         else:
             self.feedback["parallel_shaft"] = {
                 0: 0,
                 1: angle,
-                2: "적절한 손목 힌지와 몸의 회전 시 클럽이 지면과 평행하게 되는 것이 자연스럽습니다. 너무 적거나 지나친 회전은 피해야 돼요."
+                2: "적절한 손목 힌지와 몸의 회전 시 클럽이 지면과 평행하게 되는 것이 자연스럽습니다. 너무 적거나 지나친 회전은 피해야합니다."
             }
     '''
     --------------------------------------------------------------------
@@ -216,7 +223,7 @@ class Top:
         add_korean_keyword(self.feedback, KOREAN_KEYWORD)
 
         # 모든 키를 스트링으로 바꾼 결과 리턴
-        return key_to_str(self.feedback)
+        return self.feedback
 
 
 KOREAN_KEYWORD = {

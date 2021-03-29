@@ -15,7 +15,7 @@ from models.yolo.yolo import yolo
 from anal_poses import Anal
 from anal_poses.utils import MyEncoder
 
-from pymongo import MongoClient
+from pymongo import MongoClient, ASCENDING, DESCENDING
 from bson.json_util import dumps
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
 
@@ -203,7 +203,7 @@ def upload_file():
     # )
     col.update_one(
         {"email": current_user},
-        {"$push": {"swingData": result}}
+        {"$push": {"swingData": json.dumps(result, ensure_ascii=False)}}
     )
     # print(json.dumps(result))
     print(f'{current_user} : {upload_date}, 스윙 분석 업데이트')
@@ -306,9 +306,9 @@ def login():
         return 'bad'
 
 
-@app.route('/past-swing')
+@app.route('/get-past-swing')
 @jwt_required()
-def past_swing():
+def get_past_swing():
     current_user = get_jwt_identity()
     print(current_user)
 
@@ -333,9 +333,12 @@ def past_swing():
 @jwt_required()
 def get_my_badges():
     current_user = get_jwt_identity()
-    user_badges = col.find_one({ "email": current_user })["badges"]
-    print(type(user_badges))
-    return user_badges
+    doc = col.find_one({ "email": current_user })
+    print(type(doc))
+    return {
+        "userName": doc["firstName"],
+        "badges": doc["badges"]
+    }
 
 
 # 이미지 요청 처리
@@ -365,13 +368,94 @@ def get_badge_image(badge_name):
     return send_from_directory('data/images/badges', f"{badge_name}.png")
 
 
+# 소셜에 비디오를 업로드
+@app.route('/post-social-video', methods=['POST'])
+@jwt_required()
+def post_social_video():
+    current_user = get_jwt_identity()
+    video_name = request.json.get('video')
+    print(video_name)
+    now = datetime.now()
+    upload_date = now.strftime('%Y-%m-%d-%H-%M')
+    db.social.insert_one({
+        "userName": current_user,
+        "date": upload_date,
+        "videoName": video_name,
+        "likes": 0,
+    })
+    return "success"
 
 
 # 비디오 요청 처리
-@app.route('/get-video')
+@app.route('/get-social')
+# @jwt_required()
+def get_social():
+    index = int(request.args.get('index'))
+    docs = db.social.find({}, { "_id": False }).sort("_id", DESCENDING)
+    docs = list(docs)
+    print(docs)
+    # print(docs[(-5 * index) : (-1 * index)])
+    return { "socialData": docs[index : (5 * (index + 1)) ] }
+
+
+@app.route('/get-social-video')
+def get_social_video():
+    video_name = request.args.get('name')
+    return send_from_directory('data/videos', f"{video_name}.mp4")
+
+
+@app.route('/get-social-video-likes')
+def get_social_video_likes():
+    video_name = request.args.get('name')
+    return db.social.find_one({ 'videoName': video_name })['likes']
+
+
+@app.route('/like')
 @jwt_required()
-def get_video():
-    pass
+def put_like():
+    current_user = get_jwt_identity()
+    video_name = request.args.get('name')
+    like_type = request.args.get('type')
+    if like_type == "plus":
+        # 현재 좋아요 숫자에서 + 1
+        likes = db.social.find_one({'videoName': video_name})['likes']
+        db.social.update_one(
+            {'videoName': video_name},
+            {'$set': {
+                'likes': int(likes) + 1
+            }
+            }
+        )
+        # 커런트 유저의 좋아요 목록 업데이트
+        col.update_one(
+            {'email': current_user},
+            {'$push': {
+                'likeList': video_name
+            }}
+        )
+    elif like_type == "minus":
+        # 현재 좋아요 숫자에서 + 1
+        likes = db.social.find_one({'videoName': video_name})['likes']
+        db.social.update_one(
+            {'videoName': video_name},
+            {'$set': {
+                'likes': int(likes) - 1
+            }
+            }
+        )
+        # 커런트 유저의 좋아요 목록 가져오기
+        users_doc = col.find_one({ "email": current_user })['likes']
+
+
+        col.update_one(
+            {'email': current_user},
+            {'$push': {
+                'likeList': video_name
+            }}
+        )
+
+
+    return 'success'
 
 
 @app.route('/test/update')

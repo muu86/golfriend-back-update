@@ -11,6 +11,7 @@ class TakeAway:
         self.kp = kp
         self.face_on = face_on
         self.feedback = dict()
+        self.height = self.kp[0][1][1] - self.kp[0][11][1]
 
     # 테이크어웨이 시 클럽을 멀리 보낼 수록 큰 스윙 궤도를 만들 수 있다.
     # 이른 힌지는 클럽 헤드의 이동 거리를 감소시켜 비거리 감소를 가져온다.
@@ -158,7 +159,7 @@ class TakeAway:
         add_korean_keyword(self.feedback, KOREAN_KEYWORD)
 
         # 모든 키를 스트링으로 바꾼 결과 리턴
-        return key_to_str(self.feedback)
+        return self.feedback
 
 
 KOREAN_KEYWORD = {
