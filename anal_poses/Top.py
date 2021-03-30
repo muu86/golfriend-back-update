@@ -76,7 +76,7 @@ class Top:
             self.feedback["left_knee_moving"] = {
                 0: 2,
                 1: angle,
-                2: "good"
+                2: "체중 이동 시 왼 다리 이동 체크"
             }
         elif 150 <= angle:
             self.feedback["left_knee_moving"] = {
@@ -193,7 +193,7 @@ class Top:
             self.feedback["left_wrist_flat"] = {
                 0: 2,
                 1: angle,
-                2: "손목 힌지 굿~"
+                2: "손목 힌지 체크"
             }
         elif 0 <= angle <= 60:
             self.feedback["left_wrist_flat"] = {

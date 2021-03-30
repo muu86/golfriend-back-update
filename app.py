@@ -20,13 +20,13 @@ from bson.json_util import dumps
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
 
 # openpose 패스 설정
-# op_path = "C:/openpose/bin/python/openpose/Release"
-# sys.path.append(op_path)
-# os.environ['PATH'] = os.environ['PATH'] + ';' + 'C:/openpose/bin'
+op_path = "C:/openpose/bin/python/openpose/Release"
+sys.path.append(op_path)
+os.environ['PATH'] = os.environ['PATH'] + ';' + 'C:/openpose/bin'
 
 # openpose 경로 집
-sys.path.append("C:\\openpose\\build\\python\\openpose\\Release")
-os.environ['PATH'] = os.environ['PATH'] + ';' + 'C:\\penpose\\build\\bin'
+# sys.path.append("C:\\openpose\\build\\python\\openpose\\Release")
+# os.environ['PATH'] = os.environ['PATH'] + ';' + 'C:\\penpose\\build\\bin'
 
 # openpose import
 try:
@@ -418,9 +418,11 @@ def get_social():
     index = int(request.args.get('index'))
     docs = db.social.find({}, { "_id": False }).sort("_id", DESCENDING)
     docs = list(docs)
-    print(docs)
-    # print(docs[(-5 * index) : (-1 * index)])
-    return { "socialData": docs[index : (5 * (index + 1)) ] }
+    docs_indexed = docs[(5 * index) : (5 * (index + 1)) ]
+
+    if not docs_indexed:
+        return 'no more data'
+    return { "socialData": docs_indexed }
 
 
 @app.route('/get-social-video')

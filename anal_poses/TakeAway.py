@@ -38,7 +38,7 @@ class TakeAway:
             self.feedback["early_cocking"] = {
                 0: 2,
                 1: angle,
-                2: ""
+                2: "이른 코킹 체크"
             }
         elif 90 <= angle:
             self.feedback["early_cocking"] = {
