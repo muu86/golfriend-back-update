@@ -245,19 +245,6 @@ def upload_file():
     return result
 
 
-@app.route('/images/<path:image_name>/<int:i>')
-def get_images(image_name, i):
-    print(image_name)
-    print(i)
-    try:
-        return send_from_directory(
-            'data/images/output_images',
-            filename=f"{image_name}_{i}.png",
-            as_attachment=True)
-    except FileNotFoundError:
-        abort(404)
-
-
 # 클라이언트가 가지고 있는 토큰이 유효기간이 지났는지 체크
 # 유효기간 지났다면 401 status 될 것
 @app.route('/check-token')
@@ -406,6 +393,27 @@ def post_social_video():
             { 'email': current_user },
             { '$push': {
                 'badges': 'share_1'
+            }}
+        )
+    if social_uploads_counts == 10:
+        col.update_one(
+            { 'email': current_user },
+            { '$push': {
+                'badges': 'share_10'
+            }}
+        )
+    if social_uploads_counts == 30:
+        col.update_one(
+            { 'email': current_user },
+            { '$push': {
+                'badges': 'share_30'
+            }}
+        )
+    if social_uploads_counts == 50:
+        col.update_one(
+            {'email': current_user},
+            {'$push': {
+                'badges': 'share_50'
             }}
         )
     return "success"
